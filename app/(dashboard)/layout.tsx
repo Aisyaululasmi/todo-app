@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, FolderKanban, Users, Settings, Menu, X } from 'lucide-react';
 import clsx from 'clsx';
 import { Avatar } from '@/components/ui/avatar';
+import { projects } from '@/lib/dummy-data';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -54,6 +55,32 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             </Link>
           );
         })}
+
+        {/* Projects shortcut */}
+        <div className="pt-4">
+          <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Projects
+          </p>
+          {projects.map((project) => (
+            <Link
+              key={project.id}
+              href={`/projects/${project.id}`}
+              onClick={onClose}
+              className={clsx(
+                'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                pathname === `/projects/${project.id}`
+                  ? 'bg-primary-50 text-primary-700'
+                  : 'text-slate-700 hover:bg-slate-200'
+              )}
+            >
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                style={{ backgroundColor: project.color }}
+              />
+              <span className="truncate">{project.name}</span>
+            </Link>
+          ))}
+        </div>
       </nav>
 
       {/* User */}
