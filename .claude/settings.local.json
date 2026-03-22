@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(findstr :5432)",
+      "Bash(curl:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find C:/Users/T480s/duty/todo-app/todo-platform/app/api/node_modules/@embedded-postgres -name psql*)",
+      "Bash(find C:/Users/T480s/duty/todo-app/todo-platform/app/api/node_modules/@embedded-postgres -name *.exe)",
+      "Bash(npx ts-node --transpile-only -e \":*)",
+      "Bash(node -e \":*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/todo_platform\" npx prisma migrate dev --name add_comment_parent_id)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/todo_platform\" npx prisma generate)",
+      "Bash(git add:*)"
+    ]
+  }
+}
