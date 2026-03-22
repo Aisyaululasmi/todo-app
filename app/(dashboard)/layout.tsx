@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FolderKanban, Users, Settings, Menu, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { LayoutDashboard, FolderKanban, Users, Settings, Menu, X, LogOut } from 'lucide-react';
 import clsx from 'clsx';
 import { Avatar } from '@/components/ui/avatar';
-import { projects } from '@/lib/dummy-data';
+import { useAuthStore } from '@/stores/auth-store';
+import { useWorkspaceStore } from '@/stores/workspace-store';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,6 +18,23 @@ const navLinks = [
 
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loadUser, logout } = useAuthStore();
+  const { projects, fetchProjects } = useWorkspaceStore();
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    const workspaceId = user?.memberships[0]?.workspaceId;
+    if (workspaceId) fetchProjects(workspaceId);
+  }, [user]);
+
+  async function handleLogout() {
+    await logout();
+    router.push('/login');
+  }
 
   return (
     <div className="flex h-screen w-64 flex-col bg-slate-50 border-r border-slate-200">
@@ -45,9 +63,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
               onClick={onClose}
               className={clsx(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                active
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-slate-700 hover:bg-slate-200'
+                active ? 'bg-primary-50 text-primary-700' : 'text-slate-700 hover:bg-slate-200',
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -56,11 +72,14 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           );
         })}
 
-        {/* Projects shortcut */}
+        {/* Projects list */}
         <div className="pt-4">
           <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
             Projects
           </p>
+          {projects.length === 0 && (
+            <p className="px-3 py-2 text-xs text-slate-400">No projects yet</p>
+          )}
           {projects.map((project) => (
             <Link
               key={project.id}
@@ -70,12 +89,12 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
                 'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 pathname === `/projects/${project.id}`
                   ? 'bg-primary-50 text-primary-700'
-                  : 'text-slate-700 hover:bg-slate-200'
+                  : 'text-slate-700 hover:bg-slate-200',
               )}
             >
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                style={{ backgroundColor: project.color }}
+                style={{ backgroundColor: project.color ?? '#6366f1' }}
               />
               <span className="truncate">{project.name}</span>
             </Link>
@@ -83,12 +102,21 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </nav>
 
-      {/* User */}
-      <div className="flex items-center gap-3 border-t border-slate-200 px-4 py-4">
-        <Avatar name="John Doe" size="sm" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-900">John Doe</p>
-          <p className="truncate text-xs text-slate-500">john@example.com</p>
+      {/* User + logout */}
+      <div className="border-t border-slate-200 px-4 py-4">
+        <div className="flex items-center gap-3">
+          <Avatar name={user?.name ?? '?'} size="sm" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-slate-900">{user?.name ?? '—'}</p>
+            <p className="truncate text-xs text-slate-500">{user?.email ?? ''}</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+            title="Log out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
@@ -117,7 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside
         className={clsx(
           'fixed inset-y-0 left-0 z-30 transition-transform duration-200 lg:hidden',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
@@ -125,7 +153,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header */}
         <header className="flex h-14 shrink-0 items-center border-b border-slate-200 bg-white px-4">
           <button
             className="lg:hidden p-2 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -136,7 +163,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-auto bg-slate-50 p-4 lg:p-6">
           {children}
         </main>

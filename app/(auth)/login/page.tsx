@@ -5,13 +5,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/auth-store';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({ email: '', password: '' });
+  const [serverError, setServerError] = useState('');
 
   function validate() {
     const next = { email: '', password: '' };
@@ -21,13 +24,19 @@ export default function LoginPage() {
     return !next.email && !next.password;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
     setIsLoading(true);
-    setTimeout(() => {
+    setServerError('');
+    try {
+      await login(email, password);
       router.push('/dashboard');
-    }, 1000);
+    } catch (err) {
+      setServerError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -54,6 +63,8 @@ export default function LoginPage() {
           error={errors.password}
           disabled={isLoading}
         />
+
+        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
 
         <Button type="submit" isLoading={isLoading} className="w-full mt-2">
           Sign In

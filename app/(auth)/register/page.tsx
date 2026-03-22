@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/auth-store';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuthStore();
   const [fields, setFields] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   function set(field: keyof typeof fields) {
     return (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -21,21 +24,34 @@ export default function RegisterPage() {
     const next = { name: '', email: '', password: '', confirmPassword: '' };
     if (!fields.name.trim()) next.name = 'Name is required.';
     if (!fields.email.trim()) next.email = 'Email is required.';
-    if (!fields.password) next.password = 'Password is required.';
-    else if (fields.password.length < 6) next.password = 'Password must be at least 6 characters.';
+    if (!fields.password) {
+      next.password = 'Password is required.';
+    } else if (fields.password.length < 8) {
+      next.password = 'Password must be at least 8 characters.';
+    } else if (!/[A-Z]/.test(fields.password)) {
+      next.password = 'Password must contain at least one uppercase letter.';
+    } else if (!/[0-9]/.test(fields.password)) {
+      next.password = 'Password must contain at least one number.';
+    }
     if (!fields.confirmPassword) next.confirmPassword = 'Please confirm your password.';
     else if (fields.confirmPassword !== fields.password) next.confirmPassword = 'Passwords do not match.';
     setErrors(next);
     return Object.values(next).every((v) => !v);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
     setIsLoading(true);
-    setTimeout(() => {
+    setServerError('');
+    try {
+      await register(fields.email, fields.password, fields.name);
       router.push('/dashboard');
-    }, 1000);
+    } catch (err) {
+      setServerError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -80,6 +96,8 @@ export default function RegisterPage() {
           error={errors.confirmPassword}
           disabled={isLoading}
         />
+
+        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
 
         <Button type="submit" isLoading={isLoading} className="w-full mt-2">
           Create Account
